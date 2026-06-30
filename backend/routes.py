@@ -40,7 +40,7 @@ class Level(SQLModel, table=True):
     creator: str | None
     first_victor: str | None
     completion_link: str | None
-    list_position: int | None = Field(default=1, ge=1, unique=True)
+    list_position: int | None = Field(default=1, unique=True)
 
 
 class LevelCreate(SQLModel):
@@ -48,7 +48,7 @@ class LevelCreate(SQLModel):
     creator: str | None
     first_victor: str | None
     completion_link: str | None
-    list_position: int | None =  Field(default=1, ge=1, unique=True)
+    list_position: int | None = Field(default=1, unique=True)
 
 
 # Generic Response Model
@@ -68,7 +68,7 @@ async def root():
 
 
 @app.get("/levels", response_model=ResponseModel[list[Level]])
-async def read_levels(session: SessionDep):
+async def read_all_levels(session: SessionDep):
 
     try:
 
@@ -81,6 +81,21 @@ async def read_levels(session: SessionDep):
 
     except:
         raise HTTPException(status_code=404, detail="There are no levels to display")
+
+
+@app.get("/levels/{pos}", response_model=ResponseModel[Level])
+async def read_level_at_pos(session: SessionDep, pos: int):
+
+    try:
+
+        this_level = session.exec(
+            select(Level).where(Level.list_position == pos)
+        ).first()
+
+        return {"data": this_level}
+
+    except:
+        raise HTTPException(status_code=404, detail=f"Level with ID {id} not found!")
 
 
 @app.post("/levels/", response_model=ResponseModel[LevelCreate])
@@ -98,7 +113,7 @@ async def create_level(level: LevelCreate, session: SessionDep):
         for lev in all_levels:
             lev.list_position += 1  # pyright: ignore[reportGeneralTypeIssues, reportAttributeAccessIssue]
 
-        all_levels = session.exec(select(Level).order_by(Level.list_position)).all() # type: ignore
+        all_levels = session.exec(select(Level).order_by(Level.list_position)).all()  # type: ignore
 
         session.add(level_add)
         session.commit()
@@ -109,17 +124,48 @@ async def create_level(level: LevelCreate, session: SessionDep):
         print("Something went wrong.")
 
 
-@app.get("/levels/{pos}", response_model=ResponseModel[Level])
-async def read_level_at_id(session: SessionDep, pos: int):
+@app.patch("/levels/{pos}", response_model=ResponseModel[Level])
+async def update_level_pos(session: SessionDep, pos: int, newPos: int):
 
     try:
-
         this_level = session.exec(select(Level).where(Level.list_position == pos)).first()
-
-        return {"data": this_level}
-
     except:
-        raise HTTPException(status_code=404, detail=f"Level with ID {id} not found!")
+        raise HTTPException(status_code=404)
+    
+    if newPos == pos:
+        return {"data": this_level}
+    
+    this_level.list_position = -1
+    session.flush()
+
+    # level moved up
+    if newPos < pos:
+        affected = session.exec(
+            select(Level)
+            .where(Level.list_position >= newPos, Level.list_position < pos)
+            .order_by(Level.list_position.desc())
+        ).all()
+
+        for lev in affected:
+            lev.list_position += 1
+
+    # Level moved down            
+    elif newPos > pos:
+        affected = session.exec(
+            select(Level)
+            .where(Level.list_position > pos, Level.list_position <= newPos)
+            .order_by(Level.list_position.asc())
+        ).all()
+        
+        for lev in affected:
+            lev.list_position -= 1
+        
+    session.flush()
+                
+    this_level.list_position = newPos
+    session.commit()
+    session.refresh(this_level)
+    return {"data" : this_level}
 
 
 @app.delete("/levels/{id}", response_model=ResponseModel[list[Level]])
@@ -147,6 +193,5 @@ async def delete_all_levels(session: SessionDep):
         session.delete(lev)
 
         session.commit()
-        session.refresh(Level)
 
     return {"data": all_tasks}
