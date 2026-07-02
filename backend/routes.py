@@ -1,7 +1,7 @@
 from fastapi import Depends, FastAPI, HTTPException, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import asynccontextmanager
-from sqlmodel import SQLModel, Session, delete, select, Field, create_engine
+from sqlmodel import SQLModel, Session, delete, select, Field, create_engine, col
 from typing import Generic, Annotated, TypeVar
 from pydantic import BaseModel
 
@@ -36,19 +36,19 @@ async def lifespan(app: FastAPI):
 
 class Level(SQLModel, table=True):
     level_id: int | None = Field(default=None, primary_key=True)
-    level_name: str | None
-    creator: str | None
-    first_victor: str | None
-    completion_link: str | None
-    list_position: int | None = Field(default=1, unique=True)
+    level_name: str
+    creator: str
+    first_victor: str
+    completion_link: str
+    list_position: int = Field(unique=True)
 
 
 class LevelCreate(SQLModel):
-    level_name: str | None
-    creator: str | None
-    first_victor: str | None
-    completion_link: str | None
-    list_position: int | None = Field(default=1, unique=True)
+    level_name: str
+    creator: str
+    first_victor: str
+    completion_link: str
+    list_position: int = Field(unique=True)
 
 
 # Generic Response Model
@@ -60,6 +60,19 @@ class ResponseModel(BaseModel, Generic[T]):
 
 
 app = FastAPI(root_path="/api/v1", lifespan=lifespan)
+
+origins = [
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:5500"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 
 @app.get("/")
@@ -127,8 +140,9 @@ async def create_level(level: LevelCreate, session: SessionDep):
 @app.patch("/levels/{pos}", response_model=ResponseModel[Level])
 async def update_level_pos(session: SessionDep, pos: int, newPos: int):
 
+    # Query database to find level at specificed position
     try:
-        this_level = session.exec(select(Level).where(Level.list_position == pos)).first()
+        this_level = session.exec(select(Level).where(Level.list_position == pos)).one()
     except:
         raise HTTPException(status_code=404)
     
@@ -143,24 +157,24 @@ async def update_level_pos(session: SessionDep, pos: int, newPos: int):
         affected = session.exec(
             select(Level)
             .where(Level.list_position >= newPos, Level.list_position < pos)
-            .order_by(Level.list_position.desc())
+            .order_by(col(Level.list_position).desc())
         ).all()
 
         for lev in affected:
             lev.list_position += 1
+            session.flush()
 
     # Level moved down            
     elif newPos > pos:
         affected = session.exec(
             select(Level)
             .where(Level.list_position > pos, Level.list_position <= newPos)
-            .order_by(Level.list_position.asc())
+            .order_by(col(Level.list_position).asc())
         ).all()
         
         for lev in affected:
             lev.list_position -= 1
-        
-    session.flush()
+            session.flush()
                 
     this_level.list_position = newPos
     session.commit()
