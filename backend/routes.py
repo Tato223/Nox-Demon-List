@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     create_db_and_tables()
     yield
 
-
+# Represents each Level in the list
 class Level(SQLModel, table=True):
     level_id: int | None = Field(default=None, primary_key=True)
     level_name: str
@@ -42,7 +42,7 @@ class Level(SQLModel, table=True):
     completion_link: str
     list_position: int = Field(unique=True)
 
-
+# Response model for creating a new level, no ID field
 class LevelCreate(SQLModel):
     level_name: str
     creator: str
@@ -53,27 +53,22 @@ class LevelCreate(SQLModel):
 
 # Generic Response Model
 T = TypeVar("T")
-
-
 class ResponseModel(BaseModel, Generic[T]):
     data: T
 
 
 app = FastAPI(root_path="/api/v1", lifespan=lifespan)
 
-origins = [
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:5500"
-]
 
+# URLs for frontend & backend test servers
+origins = ["http://127.0.0.1:8000", "http://127.0.0.1:5500"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
-
 
 @app.get("/")
 async def root():
@@ -84,12 +79,7 @@ async def root():
 async def read_all_levels(session: SessionDep):
 
     try:
-
-        all_levels = session.exec(
-            select(Level).order_by(Level.list_position)  # type: ignore
-        ).all()
-        print(all_levels)
-
+        all_levels = get_all_levels(session)
         return {"data": all_levels}
 
     except:
@@ -101,10 +91,7 @@ async def read_level_at_pos(session: SessionDep, pos: int):
 
     try:
 
-        this_level = session.exec(
-            select(Level).where(Level.list_position == pos)
-        ).first()
-
+        this_level = get_level_by_pos(session, pos)
         return {"data": this_level}
 
     except:
@@ -115,24 +102,24 @@ async def read_level_at_pos(session: SessionDep, pos: int):
 async def create_level(level: LevelCreate, session: SessionDep):
 
     try:
-        level_add = Level.model_validate(level)
+        new_level_model = Level.model_validate(level)
 
         all_levels = session.exec(
             select(Level)
-            .where(Level.list_position >= level_add.list_position)
-            .order_by(Level.list_position.desc())  # type: ignore
+            .where(Level.list_position >= new_level_model.list_position)
+            .order_by(col(Level.list_position))  
         ).all()
 
         for lev in all_levels:
-            lev.list_position += 1  # pyright: ignore[reportGeneralTypeIssues, reportAttributeAccessIssue]
-
+            lev.list_position += 1 
+            
         all_levels = session.exec(select(Level).order_by(Level.list_position)).all()  # type: ignore
 
-        session.add(level_add)
+        session.add(new_level_model)
         session.commit()
-        session.refresh(level_add)
+        session.refresh(new_level_model)
 
-        return {"data": level_add}
+        return {"data": new_level_model}
     except:
         print("Something went wrong.")
 
@@ -142,13 +129,13 @@ async def update_level_pos(session: SessionDep, pos: int, newPos: int):
 
     # Query database to find level at specificed position
     try:
-        this_level = session.exec(select(Level).where(Level.list_position == pos)).one()
+        this_level = get_level_by_pos(session, pos)
     except:
         raise HTTPException(status_code=404)
-    
+
     if newPos == pos:
         return {"data": this_level}
-    
+
     this_level.list_position = -1
     session.flush()
 
@@ -164,22 +151,22 @@ async def update_level_pos(session: SessionDep, pos: int, newPos: int):
             lev.list_position += 1
             session.flush()
 
-    # Level moved down            
+    # Level moved down
     elif newPos > pos:
         affected = session.exec(
             select(Level)
             .where(Level.list_position > pos, Level.list_position <= newPos)
             .order_by(col(Level.list_position).asc())
         ).all()
-        
+
         for lev in affected:
             lev.list_position -= 1
             session.flush()
-                
+
     this_level.list_position = newPos
     session.commit()
     session.refresh(this_level)
-    return {"data" : this_level}
+    return {"data": this_level}
 
 
 @app.delete("/levels/{id}", response_model=ResponseModel[list[Level]])
@@ -200,12 +187,15 @@ async def delete_level_at_id(session: SessionDep, id: int):
 
 @app.delete("/levels/", response_model=ResponseModel[list[Level]])
 async def delete_all_levels(session: SessionDep):
+    session.exec(delete(Level))
 
-    all_tasks = session.exec(select(Level)).all()
 
-    for lev in all_tasks:
-        session.delete(lev)
+def get_level_by_pos(session: SessionDep, pos: int):
+    this_level = session.exec(select(Level).where(Level.list_position == pos)).one()
 
-        session.commit()
+    return this_level
 
-    return {"data": all_tasks}
+
+def get_all_levels(session: SessionDep):
+    all_levels = session.exec(select(Level).order_by(col(Level.list_position))).all()
+    return all_levels

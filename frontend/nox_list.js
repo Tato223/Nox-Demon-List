@@ -10,7 +10,6 @@ async function fetchData() {
 
     // Create & format necessary elements for each level in database
     const data = await response.json();
-    console.log(data);
     data.data.forEach((level) => {
       const level_element = create_level_element(level);
       const level_anchor = create_level_anchor(level);
@@ -43,7 +42,6 @@ function create_level_embed(level) {
 function create_level_anchor(level) {
   const level_anchor = document.createElement("a");
   level_anchor.className = "level";
-  level_anchor.className = "level__completion-link";
   level_anchor.href = level.completion_link;
   level_anchor.target = "_blank";
 

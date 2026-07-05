@@ -1,128 +1,118 @@
 * {
-    margin: 0px;
-    padding: 0px;
-    border-block: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serifArial, Helvetica, sans-serif;
+  margin: 0px;
+  padding: 0px;
+  border-block: border-box;
+  font-family:
+    "Segoe UI", Tahoma, Geneva, Verdana, sans-serifArial, Helvetica, sans-serif;
 }
 
 body {
-    margin-top: 5%;
+  margin-top: 5%;
 }
 
 .title {
-    text-align: center;
-    color: aliceblue;
-    -webkit-text-stroke: 2px black;
+  text-align: center;
+  color: aliceblue;
+  -webkit-text-stroke: 2px black;
 
-    font-size: 2em;
+  font-size: 2em;
 }
 
 header {
-    padding: none;
-    background-position: center;
-    box-shadow: 4px 4px 4px 2px rgba(0, 0, 0, 0.25);
-    padding-bottom: .5%;
-    width: 100%;
+  padding: none;
+  background-position: center;
+  box-shadow: 4px 4px 4px 2px rgba(0, 0, 0, 0.25);
+  padding-bottom: 0.5%;
+  width: 100%;
 
-    position: fixed;
-    z-index: 9999;
-    top: 0;
-    left: 0;
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
 
-    background-color: rgb(237, 235, 235);;
+  background-color: rgb(237, 235, 235);
 }
 
 .levels-container {
+  max-height: 2500vh;
+  max-width: 60%;
 
-    max-height: 2500vh;
-    max-width: 60%;
+  margin: 0 auto;
 
-    margin: 0 auto;
+  display: flex;
+  flex-direction: column;
 
-    display: flex;
-    flex-direction: column;
+  align-items: center;
+  justify-content: center;
 
-    align-items: center;
-    justify-content: center;
-
-    overflow: hidden;
+  overflow: hidden;
 }
 
 h3 {
-    font-weight: 250;
-    text-align: left;
+  font-weight: 250;
+  text-align: left;
 }
 
 h4 {
-    font-weight: 100;
-    text-align: left;
+  font-weight: 100;
+  text-align: left;
 }
 
 a {
-    color: inherit;
-    text-decoration: inherit;
-    background-color: transparent;
+  color: inherit;
+  text-decoration: inherit;
+  background-color: transparent;
 }
 
-.level, .level__completion-link {
+.level {
+  display: flex;
+  flex-direction: row;
+  align-content: center;
 
-    display: flex;
-    flex-direction: row;
-    align-content: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
 
-    margin-top: 10px;
-    margin-bottom: 10px;
+  height: 125px;
+  width: 90%;
+  padding: 2.5%;
 
-    height: 125px;
-    width: 90%;
-    padding: 2.5%;
+  align-items: center;
+  align-content: baseline;
 
-    align-items: center;
-    align-content: baseline;
+  background-color: rgb(237, 235, 235);
+  border-radius: 16px;
+  border-style: dotted;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 4px 4px 2px rgba(0, 0, 0, 0.4);
 
-    background-color: rgb(237, 235, 235);
-    border-radius: 16px;
-    border-style: dotted;
-    border-color: rgba(0, 0, 0, .1);
-    box-shadow: 4px 4px 4px 2px rgba(0, 0, 0, 0.4);
-
-    overflow: hidden;
-
+  overflow: hidden;
 }
 
 .level:hover {
-    cursor: pointer;
-    background-color: rgb(206, 206, 206);;
+  cursor: pointer;
+  transform: scale(1.02);
+  background-color: rgb(206, 206, 206);
 }
 
 .level__thumb {
+  display: flex;
 
-    display: flex;
+  object-fit: fill;
+  height: 100%;
+  width: 30%;
 
-    border-color: black;
+  margin-left: 5%;
 
-    object-fit: cover;
-    height: 100%;
-    width: 30%;
-
-    margin-left: 5%;
-
-    border-radius: 20px;
-
-    outline: black;
-    outline-color: rgb(0, 0, 0);
-    outline-style: solid;
+  border-radius: 16px;
 }
 
 .level__details {
+  padding: 5%;
 
-    padding: 5%;
-
-    display: flex;
-    flex-direction: column;
-
+  display: flex;
+  flex-direction: column;
 }
 
 .victor {
-    font-weight: bold;
+  font-weight: bold;
 }

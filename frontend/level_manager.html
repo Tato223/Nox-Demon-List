@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level Manager</title>
+    <link rel="stylesheet" href="level-manager-page.css"/>
+</head>
+<body>
+    <div class="add-level-container">
+        <form class="add-level-container__form">
+
+            <label for="level-name">Level Name <span class="mandatory">*</span></label>
+            <input type="text" id="level-name" required/>
+
+            <label for="position">Position <span class="mandatory">*</span></label>
+            <input type="number" id="Position" min=1 max=50 required/>
+
+            <label for="level-creator">Creator <span class="mandatory">*</span></label>
+            <input type="text" id="level-creator" required/>
+
+            <label for="completion-link">Completion Link <span class="mandatory">*</span></label>
+            <input type="url" id="completion-link" required/>
+
+            <label for="first_victor">First Victor <span class="mandatory">*</span></label>
+            <input type="text" id="first_victor" required/>
+
+            <input type="submit" id="submit-button" value="Add Level"/>
+        </form>
+    </div>
+</body>
+</html>
