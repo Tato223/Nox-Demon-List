@@ -67,7 +67,7 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
 @app.get("/")
@@ -98,7 +98,7 @@ async def read_level_at_pos(session: SessionDep, pos: int):
         raise HTTPException(status_code=404, detail=f"Level with ID {id} not found!")
 
 
-@app.post("/levels/", response_model=ResponseModel[LevelCreate])
+@app.post("/levels", response_model=ResponseModel[LevelCreate])
 async def create_level(level: LevelCreate, session: SessionDep):
 
     try:

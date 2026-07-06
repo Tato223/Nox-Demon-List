@@ -59,10 +59,11 @@ function create_level_element(level) {
   level_creator.textContent = `by ${level.creator}`;
 
   const victor_text = document.createElement("h4");
-  victor_text.textContent = `First completed by ${level.first_victor}`;
+  victor_text.textContent = "First completed by ";
 
   const victor_name = document.createElement("span");
   victor_name.className = "victor";
+  victor_name.textContent = level.first_victor;
 
   level_div.append(level_title);
   level_div.append(level_creator);
