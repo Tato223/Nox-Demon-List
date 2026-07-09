@@ -6,36 +6,31 @@ from sqlmodel import SQLModel, Session, delete, select, Field, create_engine, co
 from typing import Generic, Annotated, Sequence, TypeVar
 from pydantic import BaseModel, ValidationError
 
+# ---------- SQLModel SETUP ---------- #
+
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
-# Engine instance
 connect_args = {"check_same_thread": False}
 engine = create_engine(sqlite_url, connect_args=connect_args)
 
-
-# Create the database
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
-
 
 # Create session for engine to interact with database
 def get_session():
     with Session(engine) as session:
         yield session
 
-
 SessionDep = Annotated[Session, Depends(get_session)]
 
-
-# Create database on startup with test tables
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
     yield
 
+# ---------- DB TABLES ---------- #
 
-# Represents each Level in the list
 class Level(SQLModel, table=True):
     level_id: int | None = Field(default=None, primary_key=True)
     level_name: str
@@ -43,9 +38,34 @@ class Level(SQLModel, table=True):
     first_victor: str
     completion_link: str
     list_position: int = Field(unique=True, ge=1, le=1000)
+    
+class Users(SQLModel, table=True):
+    user_id: int | None = Field(default=None, primary_key=True)
+    username: str = Field(unique=True)
+    email: str = Field(unique=True)
+    hashed_password: str
+    is_active : bool = Field(default=False)
+    
+    
+# ---------- RESPONSE MODELS ---------- #
 
+class UserResponse(BaseModel):
+    username: str
+    email: str
+    is_active: bool = Field(default=True)
+    
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
+    is_active: bool = Field(default=True)
+    
+class UserRead(BaseModel):
+    user_id: int
+    username: str
+    email: str
+    is_active: bool = Field(default=True)
 
-# Response model for creating a new level, no ID field
 class LevelCreate(SQLModel):
     level_name: str
     creator: str
@@ -53,22 +73,22 @@ class LevelCreate(SQLModel):
     completion_link: str
     list_position: int = Field(ge=1, le=1000)
 
-
 # Generic Response Model
 T = TypeVar("T")
-
-
 class ResponseModel(BaseModel, Generic[T]):
     data: T
 
+# ---------- API CONFIG ---------- #
 
 app = FastAPI(root_path="/api/v1", lifespan=lifespan)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+origins = [
+    "http://127.0.0.1:8000" # Backend server origin
+    "http://127.0.0.1:5500" # Frontend server origin
+    ]
 
-# URLs for frontend & backend test servers
-origins = ["http://127.0.0.1:8000", "http://127.0.0.1:5500"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -77,6 +97,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ---------- API ENDPOINTS ---------- #
 
 @app.get("/")
 async def root():
@@ -129,9 +151,7 @@ async def create_level(
         new_level_model = Level.model_validate(level)
 
         # Check if a level already exists at the new position
-        level_at_pos = session.exec(
-            select(Level).where(Level.list_position == new_level_model.list_position)
-        ).first()
+        level_at_pos = get_level_by_pos(session, new_level_model.list_position)
 
         if level_at_pos:
             affected_levels = get_affected_levels_post(
@@ -139,7 +159,6 @@ async def create_level(
             )
             shift_down_levels(
                 session=session,
-                new_pos=new_level_model.list_position,
                 affected_levels=affected_levels,
             )
 
@@ -161,7 +180,7 @@ async def update_level_pos(
 
     this_level = get_level_by_id(session, level_id)
     pos = this_level.list_position
-    
+
     if this_level is None:
         raise HTTPException(
             status_code=404, detail=f"Level with ID {level_id} not found!"
@@ -172,20 +191,23 @@ async def update_level_pos(
             status_code=400, detail="New position is the same as the current position."
         )
 
-
     # Sets position to -1 temporarily to avoid unique constraint violation
     this_level.list_position = -1
     session.flush()
 
     # level moved up
     if new_pos < pos:
-        affected_levels = get_affected_levels_reorder(session, pos, new_pos, move_levels_up=True)
-        shift_down_levels(session, new_pos, affected_levels)
+        affected_levels = get_affected_levels_reorder(
+            session, pos, new_pos, move_levels_up=True
+        )
+        shift_down_levels(session, affected_levels)
 
     # Level moved down
     elif new_pos > pos:
-        affected_levels = get_affected_levels_reorder(session, pos, new_pos, move_levels_up=False)
-        shift_up_levels(session, new_pos, affected_levels)
+        affected_levels = get_affected_levels_reorder(
+            session, pos, new_pos, move_levels_up=False
+        )
+        shift_up_levels(session, affected_levels)
 
     this_level.list_position = new_pos
     save_changes(session, this_level)
@@ -198,23 +220,21 @@ async def delete_level_at_id(
     session: SessionDep, level_id: int, token: str = Depends(oauth2_scheme)
 ):
     this_level = get_level_by_id(session, level_id)
-    
+
     original_pos = this_level.list_position
     this_level.list_position = -1
 
     affected_levels = session.exec(
         select(Level)
         .where(Level.list_position > original_pos)
-        .order_by(col(Level.list_position))
+        .order_by(col(Level.list_position).desc())
     ).all()
-    
-    for lev in affected_levels:
-        lev.list_position -= 1
-        session.flush()
-        
+
+    shift_up_levels(session, affected_levels)
+
     session.delete(this_level)
     session.commit()
-    
+
     return Response(status_code=204)
 
 
@@ -222,11 +242,11 @@ async def delete_level_at_id(
 async def delete_all_levels(session: SessionDep, token: str = Depends(oauth2_scheme)):
     session.exec(delete(Level))
     session.commit()
-    
+
     return Response(status_code=204)
 
 
-# ---------- HELPER FUNCTIONS ----------
+# ---------- HELPER FUNCTIONS ---------- #
 
 
 def get_level_by_pos(session: SessionDep, pos: int):
@@ -271,8 +291,11 @@ def get_affected_levels_post(session: SessionDep, pos: int, move_levels_up: bool
 
     return affected_levels
 
+
 # Affected levels between new and old position, for reordering existing levels
-def get_affected_levels_reorder(session: SessionDep, pos: int, new_pos: int, move_levels_up: bool):
+def get_affected_levels_reorder(
+    session: SessionDep, pos: int, new_pos: int, move_levels_up: bool
+):
 
     if move_levels_up:
         affected_levels = session.exec(
@@ -290,11 +313,10 @@ def get_affected_levels_reorder(session: SessionDep, pos: int, new_pos: int, mov
 
     return affected_levels
 
-# Finds all levels above the new position and lowers their position by 1
+
+# Finds all levels above the new position and shifts each level down the list by 1
 # sets the new level's position to the new position
-def shift_down_levels(
-    session: SessionDep, new_pos: int, affected_levels: Sequence[Level]
-):
+def shift_down_levels(session: SessionDep, affected_levels: Sequence[Level]):
 
     for lev in affected_levels:
         lev.list_position += 1
@@ -302,10 +324,8 @@ def shift_down_levels(
 
 
 # Finds all levels between the new position and the current position
-# raises their position by 1 before setting the new level's position to the new position
-def shift_up_levels(
-    session: SessionDep, new_pos: int, affected_levels: Sequence[Level]
-):
+# shifts each level up the list by 1 before setting the new level's position to the new position
+def shift_up_levels(session: SessionDep, affected_levels: Sequence[Level]):
 
     for lev in affected_levels:
         lev.list_position -= 1
