@@ -13,6 +13,10 @@ add_level_form.addEventListener("submit", async (event) => {
       list_position: add_level_form.querySelector("#position")?.value,
     };
 
+    if (request.list_position.trim() === "") {
+      request.list_position = null;
+    }
+
     const response = await fetch(endPoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

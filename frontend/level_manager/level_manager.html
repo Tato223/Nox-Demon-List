@@ -1,35 +1,72 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Level Manager</title>
     <script src="level_manager_logic.js" defer></script>
-    <link rel="stylesheet" href="level-manager-page.css"/>
-</head>
-<body>
+    <link rel="stylesheet" href="level-manager-page.css" />
+  </head>
+  <body>
+    <header>
+      <h1 class="title">The Nox List</h1>
+    </header>
+
     <div class="add-level-container">
-        <form class="add-level-container__form">
+      <form class="add-level-container__form">
+        <h2>Nox List Level Manager</h2>
 
-            <h2>Nox List Level Manager</h2>
+        <label for="level-name"
+          >Level Name <span class="mandatory">*</span></label
+        >
+        <input
+          type="text"
+          id="level-name"
+          placeholder="The name of the level"
+          required
+        />
 
-            <label for="level-name">Level Name <span class="mandatory">*</span></label>
-            <input type="text" id="level-name" placeholder="The name of the level" required/>
+        <label for="position">Position</label>
+        <input
+          type="number"
+          id="position"
+          placeholder="Enter the desired list position"
+          min="1"
+          max="50"
+        />
 
-            <label for="position">Position <span class="mandatory">*</span></label>
-            <input type="number" id="position" placeholder="Enter the desired list position" min=1 max=50 required/>
+        <label for="level-creator"
+          >Creator <span class="mandatory">*</span></label
+        >
+        <input
+          type="text"
+          id="level-creator"
+          placeholder="The publisher of the level"
+          required
+        />
 
-            <label for="level-creator">Creator <span class="mandatory">*</span></label>
-            <input type="text" id="level-creator" placeholder="The publisher of the level" required/>
+        <label for="completion-link"
+          >Completion Link <span class="mandatory">*</span></label
+        >
+        <input
+          type="url"
+          id="completion-link"
+          placeholder="Enter a valid Youtube URL"
+          required
+        />
 
-            <label for="completion-link">Completion Link <span class="mandatory">*</span></label>
-            <input type="url" id="completion-link" placeholder="Enter a valid Youtube URL" required/>
+        <label for="first-victor"
+          >First Victor <span class="mandatory">*</span></label
+        >
+        <input
+          type="text"
+          id="first-victor"
+          placeholder="The username of the first Nox victor"
+          required
+        />
 
-            <label for="first-victor">First Victor <span class="mandatory">*</span></label>
-            <input type="text" id="first-victor" placeholder="The username of the first Nox victor" required/>
-
-            <input type="submit" id="submit-button" value="Add Level"/>
-        </form>
+        <input type="submit" id="submit-button" value="Add Level" />
+      </form>
     </div>
-</body>
+  </body>
 </html>

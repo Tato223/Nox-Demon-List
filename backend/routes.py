@@ -71,7 +71,7 @@ class LevelCreate(SQLModel):
     creator: str
     first_victor: str
     completion_link: str
-    list_position: int = Field(ge=1, le=1000)
+    list_position: int | None = Field(ge=1, le=1000)
 
 # Generic Response Model
 T = TypeVar("T")
@@ -84,10 +84,7 @@ app = FastAPI(root_path="/api/v1", lifespan=lifespan)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-origins = [
-    "http://127.0.0.1:8000" # Backend server origin
-    "http://127.0.0.1:5500" # Frontend server origin
-    ]
+origins = ['*'] # All origins for now
 
 app.add_middleware(
     CORSMiddleware,
@@ -141,27 +138,49 @@ async def read_level_at_pos(session: SessionDep, pos: int):
 
     return {"data": this_level}
 
-
+# token: str = Depends(oauth2_scheme) -- readd later
 @app.post("/levels", response_model=ResponseModel[Level], status_code=201)
 async def create_level(
-    level: LevelCreate, session: SessionDep, token: str = Depends(oauth2_scheme)
+    level: LevelCreate, session: SessionDep
 ):
 
     try:
+        
+        # Find the lowest level on the list
+        lowest_level = get_lowest_level(session)
+        
+        # Enforce the response Model
         new_level_model = Level.model_validate(level)
+        
+        print("response model validated!")
+        
+        # Add to the bottom if position is not given
+        if new_level_model.list_position == None and lowest_level:
+            
+            print(new_level_model)
+            
+            new_level_model.list_position = lowest_level.list_position + 1
+            session.add(new_level_model)
+            save_changes(session, new_level_model)
+            
+            return {"data" : new_level_model}
 
         # Check if a level already exists at the new position
         level_at_pos = get_level_by_pos(session, new_level_model.list_position)
 
         if level_at_pos:
+            
             affected_levels = get_affected_levels_post(
-                session=session, pos=new_level_model.list_position, move_levels_up=True
+                session=session,
+                pos=new_level_model.list_position
             )
+            
             shift_down_levels(
                 session=session,
                 affected_levels=affected_levels,
             )
 
+        session.add(new_level_model)
         save_changes(session, new_level_model)
 
         return {"data": new_level_model}
@@ -179,12 +198,13 @@ async def update_level_pos(
 ):
 
     this_level = get_level_by_id(session, level_id)
-    pos = this_level.list_position
 
     if this_level is None:
         raise HTTPException(
             status_code=404, detail=f"Level with ID {level_id} not found!"
         )
+        
+    pos = this_level.list_position
 
     if new_pos == this_level.list_position:
         raise HTTPException(
@@ -220,6 +240,9 @@ async def delete_level_at_id(
     session: SessionDep, level_id: int, token: str = Depends(oauth2_scheme)
 ):
     this_level = get_level_by_id(session, level_id)
+    
+    if not this_level:
+        raise HTTPException(status_code=404, detail=f"Level with id {level_id} not found!")
 
     original_pos = this_level.list_position
     this_level.list_position = -1
@@ -251,19 +274,11 @@ async def delete_all_levels(session: SessionDep, token: str = Depends(oauth2_sch
 
 def get_level_by_pos(session: SessionDep, pos: int):
     this_level = session.exec(select(Level).where(Level.list_position == pos)).first()
-    if this_level is None:
-        raise HTTPException(
-            status_code=404, detail=f"Level at position {pos} not found!"
-        )
     return this_level
 
 
 def get_level_by_id(session: SessionDep, level_id: int):
     this_level = session.get(Level, level_id)
-    if this_level is None:
-        raise HTTPException(
-            status_code=404, detail=f"Level with ID {level_id} not found!"
-        )
     return this_level
 
 
@@ -272,22 +287,19 @@ def get_all_levels(session: SessionDep):
     return all_levels
 
 
+def get_lowest_level(session: SessionDep):
+    lowest_level = session.exec(select(Level).order_by(col(Level.list_position).desc())).first()
+    return lowest_level
+
+
 # Grabs all levels that will be affected by the position change when creating a new level
-def get_affected_levels_post(session: SessionDep, pos: int, move_levels_up: bool):
+def get_affected_levels_post(session: SessionDep, pos: int):
 
-    if move_levels_up:
-        affected_levels = session.exec(
-            select(Level)
-            .where(Level.list_position >= pos)
-            .order_by(col(Level.list_position))
-        ).all()
-
-    else:
-        affected_levels = session.exec(
-            select(Level)
-            .where(Level.list_position <= pos)
-            .order_by(col(Level.list_position).desc())
-        ).all()
+    affected_levels = session.exec(
+        select(Level)
+        .where(Level.list_position >= pos)
+        .order_by(col(Level.list_position).desc())
+    ).all()
 
     return affected_levels
 
@@ -337,3 +349,4 @@ def save_changes(session: SessionDep, level: Level):
     session.commit()
     session.refresh(level)
     return level
+
