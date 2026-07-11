@@ -6,16 +6,19 @@
     <title>The Nox List</title>
 
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="/frontend/components/header.css" />
+    <link rel="stylesheet" href="/frontend/components/defaults.css" />
+
     <script src="nox_list.js" defer></script>
   </head>
 
   <body>
-
     <div class="background">
-
       <header>
         <h1 class="title">
-          <a class="title__link" href="/frontend/home_page/index.html">The Nox List</a>
+          <a class="title__link" href="/frontend/pages/home_page/index.html"
+            >The Nox List</a
+          >
         </h1>
 
         <form class="search-bar__form">
@@ -24,10 +27,17 @@
         </form>
 
         <div class="header__links">
-          <a class="level-manager" href="/frontend/level_manager/level_manager.html">Level Manager</a>
-          <img class="profile_icon" src="/frontend/images/default_pfp.png" alt="A user profile icon"/>
+          <a
+            class="level-manager"
+            href="/frontend/pages/level_manager/level_manager.html"
+            >Level Manager</a
+          >
+          <img
+            class="profile_icon"
+            src="/frontend/images/default_pfp.png"
+            alt="A user profile icon"
+          />
         </div>
-
       </header>
 
       <div class="levels-container"></div>
