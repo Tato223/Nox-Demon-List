@@ -1,0 +1,18 @@
+* {
+  margin: 0px;
+  padding: 0px;
+  border-block: border-box;
+}
+
+body {
+  margin-top: 5%;
+  background: #374f66;
+  background: radial-gradient(ellipse, rgba(55, 79, 102, 1) 50%, rgba(16, 23, 31, 1) 100%);
+
+  overflow-y: scroll;
+}
+
+.background {
+  height: 100%;
+  width: 100%;
+}
