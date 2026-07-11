@@ -8,9 +8,32 @@
     <link rel="stylesheet" href="level-manager-page.css" />
   </head>
   <body>
-    <header>
-      <h1 class="title">The Nox List</h1>
-    </header>
+    <div class="background">
+      <header>
+
+        <h1 class="title">
+          <a class="title__link" href="/frontend/home_page/index.html">The Nox List</a>
+        </h1>
+
+        <form class="search-bar__form">
+          <label class="search-bar__label" for="search-bar">🔎</label>
+          <input type="search" id="search-bar" placeholder="Search levels..." />
+        </form>
+
+        <div class="header__links">
+          <a
+            class="level-manager"
+            href="/frontend/level_manager/level_manager.html"
+            >Level Manager</a
+          >
+          <img
+            class="profile_icon"
+            src="/frontend/images/default_pfp.png"
+            alt="A user profile icon"
+          />
+        </div>
+      </header>
+    </div>
 
     <div class="add-level-container">
       <form class="add-level-container__form">

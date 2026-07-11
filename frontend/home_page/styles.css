@@ -2,8 +2,7 @@
   margin: 0px;
   padding: 0px;
   border-block: border-box;
-  font-family:
-    "Segoe UI", Tahoma, Geneva, Verdana, sans-serifArial, Helvetica, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serifArial, Helvetica, sans-serif;
 }
 
 body {
@@ -12,13 +11,7 @@ body {
   background: radial-gradient(ellipse, rgba(55, 79, 102, 1) 50%, rgba(16, 23, 31, 1) 100%);
 }
 
-body::scroll-marker {
-  scroll-behavior: smooth;
-  background-color: from rgba(0, 0, 0, 0);
-}
-
 .background {
-
   height: 100%;
   width: 100%;
 }
@@ -176,7 +169,7 @@ a {
 
   background-color: #9DB2BF;
   border-radius: 16px;
-  border-style: groove;
+  border-style: solid;
   border-color: #27374D;
   box-shadow: 4px 4px 4px 4px rgba(0, 0, 0, 0.4);
 
@@ -210,4 +203,9 @@ a {
 
 .victor {
   font-weight: bold;
+}
+
+a, a:visited {
+    text-decoration: none !important;
+    color: inherit;
 }
