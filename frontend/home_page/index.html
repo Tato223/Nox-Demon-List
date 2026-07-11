@@ -3,29 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Da Nox List</title>
+    <title>The Nox List</title>
 
     <link rel="stylesheet" href="styles.css" />
     <script src="nox_list.js" defer></script>
   </head>
 
   <body>
-    <header>
-      <h1 class="title">The Nox List</h1>
 
-      <form class="search-bar__form">
-        <label class="search-bar__label" for="search-bar">🔎</label>
-        <input type="search" id="search-bar" placeholder="Search levels..." />
-      </form>
+    <div class="background">
 
-      <div class="header__links">
-        <a class="login"> <h1>Login</h1> </a>
-        <a class="register"><h1>Register</h1> </a>
-        <a class="submit-record"><h1>Submit A Record</h1> </a>
-      </div>
+      <header>
+        <h1 class="title">The Nox List</h1>
 
-    </header>
+        <form class="search-bar__form">
+          <label class="search-bar__label" for="search-bar">🔎</label>
+          <input type="search" id="search-bar" placeholder="Search levels..." />
+        </form>
 
-    <div class="levels-container"></div>
+        <div class="header__links">
+          <a class="level-manager" href="/frontend/level_manager/level_manager.html">Level Manager</a>
+          <img class="profile_icon" src="/frontend/images/default_pfp.png" alt="A user profile icon"/>
+        </div>
+
+      </header>
+
+      <div class="levels-container"></div>
+    </div>
   </body>
 </html>
