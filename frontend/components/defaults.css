@@ -10,6 +10,8 @@ body {
   background: radial-gradient(ellipse, rgba(55, 79, 102, 1) 50%, rgba(16, 23, 31, 1) 100%);
 
   overflow-y: scroll;
+
+  min-height: 100vh;
 }
 
 .background {
