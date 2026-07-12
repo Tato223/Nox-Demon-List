@@ -1,24 +1,4 @@
-* {
-  margin: 0px;
-  padding: 0px;
-  border-block: border-box;
-}
-
-body {
-  margin-top: 5%;
-  background: #374f66;
-  background: radial-gradient(ellipse, rgba(55, 79, 102, 1) 50%, rgba(16, 23, 31, 1) 100%);
-
-  overflow-y: scroll;
-
-  font-family: Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial, sans-serif;
-}
-
-.title, .header__links {
-  color: aliceblue;
-}
-
-.add-level-container {
+.login-container {
     display: flex;
     flex-direction: column;
 
@@ -32,7 +12,7 @@ body {
     width: 500px;
 
     margin: 2%;
-    gap: 5%;
+    margin-top: 7%;
 
     background-color: aliceblue;
 
@@ -41,7 +21,14 @@ body {
     box-shadow: 4px 4px 4px 2px rgba(0, 0, 0, 0.2);
 }
 
-.add-level-container__form {
+.login-container__heading {
+    text-align: center;
+    margin-top: 10%;
+    font-size: 2em;
+    height: 2%;
+}
+
+.login-container__form {
     display: flex;
     flex-direction: column;
 
@@ -53,10 +40,26 @@ body {
     width: 75%;
     height: 85%;
 
-    gap: 2%;
+    gap: 3%;
+    
 
 }
 
-input {
+.username-block > input, .password-block > input {
     width: 98%;
+    height: 100%;
+    padding: 1%;
+    border-radius: 12px;
+}
+
+.username-block, .password-block {
+    display: flex;
+    flex-direction: column;
+
+    width: 98%;
+    height: 17.5%;
+
+    row-gap: 10%;
+
+    padding: 2.5%;
 }

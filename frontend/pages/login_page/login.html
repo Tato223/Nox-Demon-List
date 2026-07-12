@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <link rel="Stylesheet" href="/frontend/pages/login_page/login_page.css" />
+    <link rel="Stylesheet" href="/frontend/components/header.css" />
+    <link rel="Stylesheet" href="/frontend/components/fonts.css" />
+    <link rel="stylesheet" href="/frontend/components/defaults.css" />
+  </head>
+  <body>
+    <div class="background">
+      <header>
+        <h1 class="title">
+          <a class="title__link" href="/frontend/pages/home_page/index.html"
+            >The Nox List</a
+          >
+        </h1>
+
+        <form class="search-bar__form">
+          <label class="search-bar__label" for="search-bar">🔎</label>
+          <input type="search" id="search-bar" placeholder="Search levels..." />
+        </form>
+
+        <div class="header__links">
+          <a
+            class="level-manager"
+            href="/frontend/pages/level_manager/level_manager.html"
+            >Level Manager</a
+          >
+
+          <button class="login-button">
+            <a href="/frontend/pages/login_page/login.html"> Log in </a>
+          </button>
+        </div>
+      </header>
+
+      <div class="login-container">
+        <h2 class="login-container__heading">Login to your account</h2>
+
+        <form class="login-container__form">
+            
+          <div class="username-block">
+            <label for="username">
+              Username
+              <span class="mandatory">*</span>
+            </label>
+
+            <input
+              id="username"
+              type="text"
+              placeholder="Enter your username"
+              required
+            />
+          </div>
+
+          <div class="password-block">
+            <label for="password">
+              Password
+              <span class="mandatory">*</span>
+            </label>
+
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+
+          <input class="submit-button" type="submit" value="login" />
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

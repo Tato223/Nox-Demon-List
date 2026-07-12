@@ -62,19 +62,28 @@ header {
 }
 
 
-.profile_icon {
-  height: 40px;
-  width: 40px;
-  border-radius: 20px;
+.login-button {
+  padding:  2%;
+  width: 15%;
+  border-radius: 6px;
 
   justify-self: right;
+
+  background-color: rgb(245, 228, 134);
+
+  font-size: .75em;
+}
+
+.login-button:hover {
+  cursor: pointer;
+  background-color: rgb(207, 192, 105);
 }
 
 .level-manager {
   -webkit-text-stroke: .75px black;
 }
 
-.profile_icon:hover, .level-manager:hover {
+.level-manager:hover {
   background-color: #374f66;
   border-radius: 32px;
   cursor: pointer;

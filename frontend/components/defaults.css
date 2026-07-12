@@ -18,3 +18,27 @@ body {
   height: 100%;
   width: 100%;
 }
+
+.submit-button {
+    color: whitesmoke;
+    background-color: rgb(74, 202, 74);
+
+    height: 10%;
+    width: 50%;
+    border-radius: 8px;
+
+    margin-top: 5%;
+}
+
+.submit-button:hover {
+    cursor: pointer;
+    background-color:rgb(68, 178, 68)
+}
+
+label {
+    align-self: start;
+}
+
+span.mandatory {
+    color: red;
+}
