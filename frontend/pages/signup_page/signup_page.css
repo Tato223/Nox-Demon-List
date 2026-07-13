@@ -1,4 +1,4 @@
-.login-container {
+.signup-container {
     display: flex;
     flex-direction: column;
 
@@ -21,14 +21,16 @@
     box-shadow: 4px 4px 4px 2px rgba(0, 0, 0, 0.2);
 }
 
-.login-container__heading {
+.signup-container__heading {
     text-align: center;
-    margin-top: 10%;
+    margin-top: 7.5%;
     font-size: 2em;
     height: 2%;
+
+    margin-bottom: 10%;
 }
 
-.login-container__form {
+.signup-container__form {
     display: flex;
     flex-direction: column;
 
@@ -40,26 +42,26 @@
     width: 75%;
     height: 85%;
 
-    gap: 3%;
+    gap: 2%;
     
 
 }
 
-.username-block > input, .password-block > input {
+.username-block > input, .password-block > input, .email-block > input {
     width: 98%;
     height: 100%;
     padding: 1%;
     border-radius: 12px;
 }
 
-.username-block, .password-block {
+.username-block, .password-block, .email-block {
     display: flex;
     flex-direction: column;
 
     width: 98%;
     height: 17.5%;
 
-    row-gap: 10%;
+    row-gap: 6%;
 
     padding: 2.5%;
 }

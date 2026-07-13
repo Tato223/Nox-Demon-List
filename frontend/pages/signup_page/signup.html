@@ -3,11 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login</title>
-    <link rel="Stylesheet" href="/frontend/pages/login_page/login_page.css" />
+    <title>Sign Up</title>
+
+    <!-- scripts -->
+     <script src="signup_page_logic.js" defer></script>
+
+    <!-- styles -->
+    <link rel="Stylesheet" href="/frontend/pages/signup_page/signup_page.css" />
     <link rel="Stylesheet" href="/frontend/components/header.css" />
     <link rel="Stylesheet" href="/frontend/components/fonts.css" />
     <link rel="stylesheet" href="/frontend/components/defaults.css" />
+
   </head>
   <body>
     <div class="background">
@@ -30,16 +36,31 @@
             >Level Manager</a
           >
 
-          <button class="login-button">
-            <a href="/frontend/pages/login_page/login.html"> Log in </a>
+          <button class="signup-button">
+            <a href="/frontend/pages/signup_page/signup.html"> Sign up </a>
           </button>
         </div>
       </header>
 
-      <div class="login-container">
-        <h2 class="login-container__heading">Login to your account</h2>
+      <div class="signup-container">
+        <h2 class="signup-container__heading">Sign up for an account</h2>
 
-        <form class="login-container__form">
+        <form class="signup-container__form">
+
+          <div class="email-block">
+            <label for="email">
+              Email
+              <span class="mandatory">*</span>
+            </label>
+
+            <input
+              id="email"
+              type="email"
+              placeholder="Enter a valid email address"
+              required
+              autocomplete="email"
+            />
+          </div>
             
           <div class="username-block">
             <label for="username">
@@ -52,6 +73,9 @@
               type="text"
               placeholder="Enter your username"
               required
+              autocomplete="username"
+              minlength="3"
+              maxlength="16"
             />
           </div>
 
@@ -66,10 +90,11 @@
               type="password"
               placeholder="Enter your password"
               required
+              minlength="8"
             />
           </div>
 
-          <input class="submit-button" type="submit" value="login" />
+          <input class="submit-button" type="submit" value="Sign up" />
         </form>
       </div>
     </div>

@@ -28,6 +28,8 @@ header {
   font-size: 2em;
   width: 100%;
 
+  flex-basis: 100%;
+
   align-self: center;
 
   background: linear-gradient(to bottom, rgb(255, 255, 255), rgb(105, 105, 105));
@@ -60,8 +62,12 @@ header {
   margin-right: 2%;
   margin-left: 0%;
 
+  min-width: min-content;
+  min-height: min-content;
 
   justify-content: flex-end;
+
+  flex-shrink: 1;
 }
 
 .header__links > a {
@@ -69,9 +75,20 @@ header {
 }
 
 
-.login-button {
-  padding:  2%;
-  width: 15%;
+.signup-button {
+
+  padding: 1%;
+
+
+  max-height: 35px;
+  max-width: 20%;
+
+  min-width: min-content;
+  min-height: min-content;
+
+  text-overflow: clip;
+
+
   border-radius: 6px;
 
   justify-self: right;
@@ -79,9 +96,12 @@ header {
   background-color: rgb(245, 228, 134);
 
   font-size: .75em;
+
+  text-align: center;
+  text-justify: center;
 }
 
-.login-button:hover {
+.signup-button:hover {
   cursor: pointer;
   background-color: rgb(207, 192, 105);
 }
