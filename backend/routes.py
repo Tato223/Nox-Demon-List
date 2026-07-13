@@ -5,6 +5,19 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import SQLModel, Session, delete, select, Field, create_engine, col
 from typing import Generic, Annotated, Sequence, TypeVar
 from pydantic import BaseModel, ValidationError
+import bcrypt
+
+# TODO
+
+# Priorites:
+# Refactor helper functions to apply to multiple tables
+# Organize login into different folders (response models, auth, different endpoints)
+# Learn how to implement Oauth2 and JWT
+# Create login endpoints
+
+# Later on:
+# Implement leaderboard logic
+# Migrate to PostgreSQL for easier deployment
 
 # ---------- SQLModel SETUP ---------- #
 
@@ -17,7 +30,6 @@ engine = create_engine(sqlite_url, connect_args=connect_args)
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
-# Create session for engine to interact with database
 def get_session():
     with Session(engine) as session:
         yield session
@@ -39,7 +51,7 @@ class Level(SQLModel, table=True):
     completion_link: str
     list_position: int = Field(unique=True, ge=1, le=1000)
     
-class Users(SQLModel, table=True):
+class User(SQLModel, table=True):
     user_id: int | None = Field(default=None, primary_key=True)
     username: str = Field(unique=True)
     email: str = Field(unique=True)
@@ -103,10 +115,10 @@ async def root():
 
 
 @app.get("/levels", response_model=ResponseModel[list[Level]])
-async def read_all_levels(session: SessionDep):
+async def read_all_levels(session: SessionDep, limit = Query(default=50)):
 
     try:
-        all_levels = get_all_levels(session)
+        all_levels = get_all_levels(session, limit)
         return {"data": all_levels}
 
     except:
@@ -149,21 +161,11 @@ async def create_level(
         # Find the lowest level on the list
         lowest_level = get_lowest_level(session)
         
-        # Enforce the response Model
-        new_level_model = Level.model_validate(level)
-        
-        print("response model validated!")
-        
         # Add to the bottom if position is not given
-        if new_level_model.list_position == None and lowest_level:
-            
-            print(new_level_model)
-            
-            new_level_model.list_position = lowest_level.list_position + 1
-            session.add(new_level_model)
-            save_changes(session, new_level_model)
-            
-            return {"data" : new_level_model}
+        if level.list_position is None and lowest_level:
+            level.list_position = lowest_level.list_position + 1
+
+        new_level_model = Level.model_validate(level, update={"list_position": level.list_position})
 
         # Check if a level already exists at the new position
         level_at_pos = get_level_by_pos(session, new_level_model.list_position)
@@ -189,12 +191,12 @@ async def create_level(
         raise HTTPException(status_code=400, detail="Invalid level data provided.")
 
 
+# token: str = Depends(oauth2_scheme) -- readd later
 @app.patch("/levels/{level_id}", response_model=ResponseModel[Level])
 async def update_level_pos(
     session: SessionDep,
     level_id: int,
-    new_pos: int = Query(ge=1, le=1000),
-    token: str = Depends(oauth2_scheme),
+    new_pos: int = Query(ge=1, le=1000)
 ):
 
     this_level = get_level_by_id(session, level_id)
@@ -268,6 +270,46 @@ async def delete_all_levels(session: SessionDep, token: str = Depends(oauth2_sch
 
     return Response(status_code=204)
 
+@app.post("/register", status_code=201)
+async def register_user(session: SessionDep, user: UserCreate):
+
+    # Password hashing -> make this a function later on
+    password_bytes = user.password.encode("utf-8")
+    password_salt = bcrypt.gensalt(12)
+    hashed_password = bcrypt.hashpw(password_bytes, password_salt)
+   
+    user_in_db = session.exec(
+        select(User).where(User.username == user.username)
+    ).first()
+
+    if user_in_db is not None:
+        raise HTTPException(status_code=200, detail="User already exists!")
+    
+    db_user = User.model_validate(user, update={"hashed_password" : hashed_password})
+    session.add(db_user)
+    session.commit()
+    
+@app.get("/users", response_model=ResponseModel[list[User]])
+async def read_all_users(session: SessionDep):
+    
+    all_users = session.exec(select(User)).all()
+    
+    if all_users == []:
+        raise HTTPException(404)
+    
+    return {"data" : all_users}
+
+@app.delete("/users", status_code=204)
+async def delete_user_at_id(session: SessionDep, user_id: int):
+    
+    this_user = session.exec(select(User).where(User.user_id == user_id)).first()
+    
+    if this_user is not None:
+        session.delete(this_user)
+        session.commit()
+        
+    else:
+        raise HTTPException(404, "User not found!")
 
 # ---------- HELPER FUNCTIONS ---------- #
 
@@ -282,12 +324,12 @@ def get_level_by_id(session: SessionDep, level_id: int):
     return this_level
 
 
-def get_all_levels(session: SessionDep):
-    all_levels = session.exec(select(Level).order_by(col(Level.list_position))).all()
+def get_all_levels(session: SessionDep, limit):
+    all_levels = session.exec(select(Level).where(Level.list_position <= limit).order_by(col(Level.list_position))).all()
     return all_levels
 
 
-def get_lowest_level(session: SessionDep):
+def get_lowest_level(session: SessionDep) -> Level | None:
     lowest_level = session.exec(select(Level).order_by(col(Level.list_position).desc())).first()
     return lowest_level
 
