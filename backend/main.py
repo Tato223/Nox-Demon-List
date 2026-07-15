@@ -235,10 +235,8 @@ async def delete_all_levels(session: SessionDep, token: str = Depends(oauth2_sch
 @app.post("/register", status_code=201)
 async def register_user(session: SessionDep, user: UserCreate):
 
-    # Password hashing -> make this a function later on
-    password_bytes = user.password.encode("utf-8")
-    password_salt = bcrypt.gensalt(12)
-    hashed_password = bcrypt.hashpw(password_bytes, password_salt)
+    user_password_input = user.password
+    hashed_password = hash_password(password=user_password_input)
 
     user_in_db = session.exec(
         select(User).where(User.username == user.username)
@@ -290,6 +288,14 @@ async def delete_user_at_id(session: SessionDep, user_id: int):
 
 
 # ---------- HELPER FUNCTIONS ---------- #
+
+
+def hash_password(password: str) -> bytes:
+    # Password hashing -> make this a function later on
+    password_bytes = password.encode("utf-8")
+    password_salt = bcrypt.gensalt(12)
+    hashed_password = bcrypt.hashpw(password_bytes, password_salt)
+    return hashed_password
 
 
 def get_level_by_pos(session: SessionDep, pos: int):
