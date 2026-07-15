@@ -2,9 +2,9 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import asynccontextmanager
 from fastapi.security import OAuth2PasswordBearer
-from sqlmodel import SQLModel, Session, delete, select, Field, create_engine, col
-from typing import Generic, Annotated, Sequence, TypeVar
-from pydantic import BaseModel, ValidationError
+from sqlmodel import SQLModel, Session, delete, select, create_engine, col
+from typing import Annotated, Sequence
+from pydantic import ValidationError
 
 from modules.response_models import ResponseModel, LevelCreate, UserCreate, UserResponse
 from modules.tables import Level, User
