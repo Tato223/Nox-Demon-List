@@ -250,6 +250,24 @@ async def register_user(session: SessionDep, user: UserCreate):
     session.commit()
 
 
+@app.post("/auth", status_code=200)
+async def authenticate_user(session: SessionDep, user: UserCreate):
+
+    user_in_db = session.exec(
+        select(User).where(User.username == user.username)
+    ).first()
+
+    if user_in_db is None:
+        raise HTTPException(status_code=404, detail="Username not found!")
+
+    input_password = user.password
+
+    if not verify_password(input_password, user_in_db.hashed_password):
+        raise HTTPException(status_code=401, detail="Incorrect username or password!")
+    
+    # Provide JWT Token
+
+
 @app.get("/users", response_model=ResponseModel[list[User]])
 async def read_all_users(session: SessionDep):
 
@@ -291,11 +309,16 @@ async def delete_user_at_id(session: SessionDep, user_id: int):
 
 
 def hash_password(password: str) -> bytes:
-    # Password hashing -> make this a function later on
     password_bytes = password.encode("utf-8")
     password_salt = bcrypt.gensalt(12)
     hashed_password = bcrypt.hashpw(password_bytes, password_salt)
     return hashed_password
+
+
+def verify_password(input_pw: str, stored_pw: str) -> bool:
+    stored_pw_bytes = stored_pw.encode("utf-8")
+    input_pw_bytes = input_pw.encode("utf-8")
+    return bcrypt.checkpw(input_pw_bytes, stored_pw_bytes)
 
 
 def get_level_by_pos(session: SessionDep, pos: int):
