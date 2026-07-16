@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import TypeVar, Generic
 from sqlmodel import SQLModel
 
+# ---------- User Models ---------- #
 
 class UserResponse(BaseModel):
     username: str
@@ -19,6 +20,8 @@ class UserRead(BaseModel):
     username: str
     email: str
     is_active: bool = Field(default=True)
+    
+# ---------- Level Models ---------- #
 
 class LevelCreate(SQLModel):
     level_name: str
