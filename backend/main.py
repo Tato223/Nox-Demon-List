@@ -5,23 +5,37 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import SQLModel, Session, delete, select, create_engine, col
 from typing import Annotated, Sequence
 from pydantic import ValidationError
-
-from modules.response_models import ResponseModel, LevelCreate, UserCreate, UserResponse
+from datetime import datetime, timedelta, timezone
+from jose import JWTError, jwt
+from modules.response_models import (
+    ResponseModel,
+    LevelCreate,
+    UserCreate,
+    UserResponse,
+    AccessTokenResponseModel,
+)
 from modules.tables import Level, User
-
 import bcrypt
+from dotenv import load_dotenv
+import os
 
 # TODO
 
 # Priorites:
 # Refactor helper functions to apply to multiple tables
 # Organize login into different folders (response models, auth, different endpoints)
-# Learn how to implement Oauth2 and JWT
-# Create login endpoints
 
 # Later on:
 # Implement leaderboard logic
 # Migrate to PostgreSQL for easier deployment
+
+# ---------- CONSTANTS ---------- #
+
+load_dotenv()
+
+TOKEN_EXPIRATION_TIME = float(os.environ["TOKEN_EXPIRATION_TIME"])
+SECRET_KEY = os.environ["SECRET_KEY"]
+ALGORITHM = os.environ["ALGORITHM"]
 
 # ---------- SQLModel SETUP ---------- #
 
@@ -65,6 +79,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+async def get_current_user(
+    session: SessionDep, token: str = Depends(oauth2_scheme)
+) -> User | None:
+
+    try:
+        # Decode the jwt token and extract the username from the payload
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        current_username = payload.get("sub")
+
+        if current_username is None:
+            raise HTTPException(status_code=401, detail="Authentication Error.")
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Authentication Error.")
+
+    matching_user_in_db = session.exec(
+        select(User).where(User.username == current_username)
+    ).first()
+
+    return matching_user_in_db
 
 
 # ---------- API ENDPOINTS ---------- #
@@ -198,7 +234,7 @@ async def update_level_pos(
 
 @app.delete("/levels/{level_id}")
 async def delete_level_at_id(
-    session: SessionDep, level_id: int, token: str = Depends(oauth2_scheme)
+    session: SessionDep, level_id: int, current_user: User = Depends(get_current_user)
 ):
     this_level = get_level_by_id(session, level_id)
 
@@ -225,7 +261,9 @@ async def delete_level_at_id(
 
 
 @app.delete("/levels")
-async def delete_all_levels(session: SessionDep, token: str = Depends(oauth2_scheme)):
+async def delete_all_levels(
+    session: SessionDep, current_user: User = Depends(get_current_user)
+):
     session.exec(delete(Level))
     session.commit()
 
@@ -243,14 +281,14 @@ async def register_user(session: SessionDep, user: UserCreate):
     ).first()
 
     if user_in_db is not None:
-        raise HTTPException(status_code=200, detail="User already exists!")
+        raise HTTPException(status_code=409, detail="User already exists!")
 
     db_user = User.model_validate(user, update={"hashed_password": hashed_password})
     session.add(db_user)
     session.commit()
 
 
-@app.post("/auth", status_code=200)
+@app.post("/auth", status_code=200, response_model=AccessTokenResponseModel)
 async def authenticate_user(session: SessionDep, user: UserCreate):
 
     user_in_db = session.exec(
@@ -264,8 +302,10 @@ async def authenticate_user(session: SessionDep, user: UserCreate):
 
     if not verify_password(input_password, user_in_db.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect username or password!")
-    
-    # Provide JWT Token
+
+    # Creates and returns the access token TODO: create response model for logins
+    access_token = create_access_token(data={"sub": user_in_db.username})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.get("/users", response_model=ResponseModel[list[User]])
@@ -280,7 +320,9 @@ async def read_all_users(session: SessionDep):
 
 
 @app.put("/users{user_id}", response_model=ResponseModel[UserResponse])
-async def update_user(session: SessionDep, user: UserCreate, user_id: int):
+async def update_user(
+    session: SessionDep, user_id: int, current_user: User = Depends(get_current_user)
+):
 
     this_user = session.get(User, User.user_id)
     if this_user is not None:
@@ -293,7 +335,9 @@ async def update_user(session: SessionDep, user: UserCreate, user_id: int):
 
 
 @app.delete("/users", status_code=204)
-async def delete_user_at_id(session: SessionDep, user_id: int):
+async def delete_user_at_id(
+    session: SessionDep, user_id: int, current_user: User = Depends(get_current_user)
+):
 
     this_user = session.exec(select(User).where(User.user_id == user_id)).first()
 
@@ -319,6 +363,14 @@ def verify_password(input_pw: str, stored_pw: str) -> bool:
     stored_pw_bytes = stored_pw.encode("utf-8")
     input_pw_bytes = input_pw.encode("utf-8")
     return bcrypt.checkpw(input_pw_bytes, stored_pw_bytes)
+
+
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    exp = datetime.now(timezone.utc) + timedelta(minutes=TOKEN_EXPIRATION_TIME)
+    to_encode.update({"exp": exp})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, "ALGORITHM")
+    return encoded_jwt
 
 
 def get_level_by_pos(session: SessionDep, pos: int):
