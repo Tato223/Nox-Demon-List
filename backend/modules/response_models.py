@@ -6,8 +6,11 @@ from sqlmodel import SQLModel
 
 class UserResponse(BaseModel):
     username: str
-    email: str
-    is_active: bool = Field(default=True)
+    email: str | None
+    is_active: bool | None = Field(default=True)
+    
+class UserUpdateUsername(BaseModel):
+    username: str
     
 class UserCreate(BaseModel):
     username: str
@@ -20,6 +23,10 @@ class UserRead(BaseModel):
     username: str
     email: str
     is_active: bool = Field(default=True)
+    
+class AccessTokenResponseModel(BaseModel):
+    access_token: str
+    token_type: str
     
 # ---------- Level Models ---------- #
 

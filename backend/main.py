@@ -1,7 +1,7 @@
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import asynccontextmanager
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import SQLModel, Session, delete, select, create_engine, col
 from typing import Annotated, Sequence
 from pydantic import ValidationError
@@ -13,6 +13,7 @@ from modules.response_models import (
     UserCreate,
     UserResponse,
     AccessTokenResponseModel,
+    UserUpdateUsername
 )
 from modules.tables import Level, User
 import bcrypt
@@ -23,7 +24,8 @@ import os
 
 # Priorites:
 # Refactor helper functions to apply to multiple tables
-# Organize login into different folders (response models, auth, different endpoints)
+# Organize different endpoints into different folders using Routers
+# Learn to implement refresh tokens
 
 # Later on:
 # Implement leaderboard logic
@@ -33,13 +35,14 @@ import os
 
 load_dotenv()
 
-TOKEN_EXPIRATION_TIME = float(os.environ["TOKEN_EXPIRATION_TIME"])
+TOKEN_EXPIRATION_TIME = 30
 SECRET_KEY = os.environ["SECRET_KEY"]
 ALGORITHM = os.environ["ALGORITHM"]
+    
 
 # ---------- SQLModel SETUP ---------- #
 
-sqlite_file_name = "database.db"
+sqlite_file_name = "nox_list_database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 connect_args = {"check_same_thread": False}
@@ -68,7 +71,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(root_path="/api/v1", lifespan=lifespan)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="test_auth") #Change URL back to auth when done testing
 
 origins = ["*"]  # All origins for now
 
@@ -87,7 +90,7 @@ async def get_current_user(
 
     try:
         # Decode the jwt token and extract the username from the payload
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
         current_username = payload.get("sub")
 
         if current_username is None:
@@ -148,9 +151,11 @@ async def read_level_at_pos(session: SessionDep, pos: int):
     return {"data": this_level}
 
 
-# token: str = Depends(oauth2_scheme) -- readd later
 @app.post("/levels", response_model=ResponseModel[Level], status_code=201)
-async def create_level(level: LevelCreate, session: SessionDep):
+async def create_level(level: LevelCreate, session: SessionDep, current_user: User = Depends(get_current_user)):
+
+    if current_user.user_id != 1:
+        raise HTTPException(status_code=401)
 
     try:
 
@@ -187,11 +192,9 @@ async def create_level(level: LevelCreate, session: SessionDep):
     except ValidationError:
         raise HTTPException(status_code=400, detail="Invalid level data provided.")
 
-
-# token: str = Depends(oauth2_scheme) -- readd later
 @app.patch("/levels/{level_id}", response_model=ResponseModel[Level])
 async def update_level_pos(
-    session: SessionDep, level_id: int, new_pos: int = Query(ge=1, le=1000)
+    session: SessionDep, level_id: int, current_user: User = Depends(get_current_user), new_pos: int = Query(ge=1, le=1000)
 ):
 
     this_level = get_level_by_id(session, level_id)
@@ -264,6 +267,10 @@ async def delete_level_at_id(
 async def delete_all_levels(
     session: SessionDep, current_user: User = Depends(get_current_user)
 ):
+    
+    if current_user.user_id != 1:
+        raise HTTPException(status_code=401)
+    
     session.exec(delete(Level))
     session.commit()
 
@@ -286,6 +293,26 @@ async def register_user(session: SessionDep, user: UserCreate):
     db_user = User.model_validate(user, update={"hashed_password": hashed_password})
     session.add(db_user)
     session.commit()
+    
+    
+# Use to test AUTH endpoint in Swagger Docs    
+@app.post("/test_auth", status_code=200, response_model=AccessTokenResponseModel)
+async def test_authenticate_user(session: SessionDep, form_data: OAuth2PasswordRequestForm = Depends()):
+
+    user_in_db = session.exec(
+        select(User).where(User.username == form_data.username)
+    ).first()
+
+    if user_in_db is None:
+        raise HTTPException(status_code=404, detail="Username not found!")
+
+    input_password = form_data.password
+
+    if not verify_password(input_password, user_in_db.hashed_password):
+        raise HTTPException(status_code=401, detail="Incorrect username or password!")
+
+    access_token = create_access_token(data={"sub": user_in_db.username})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.post("/auth", status_code=200, response_model=AccessTokenResponseModel)
@@ -319,25 +346,34 @@ async def read_all_users(session: SessionDep):
     return {"data": all_users}
 
 
-@app.put("/users{user_id}", response_model=ResponseModel[UserResponse])
-async def update_user(
-    session: SessionDep, user_id: int, current_user: User = Depends(get_current_user)
+@app.patch("/users", response_model=ResponseModel[UserResponse])
+async def update_username(
+    session: SessionDep,
+    user: UserUpdateUsername,
+    user_id: int, 
+    current_user: User = Depends(get_current_user)
 ):
-
-    this_user = session.get(User, User.user_id)
-    if this_user is not None:
-        return {"data": this_user}
-
-    else:
-        raise HTTPException(
-            status_code=404, detail=f"User with ID {user_id} not found!"
-        )
+    
+    this_user = session.get(User, user_id)
+    
+    if this_user is None:
+        raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found!")
+    
+    if this_user != current_user:
+        raise HTTPException(status_code=409, detail="Invalid credentials")
+    
+    this_user = User.model_validate(this_user,  update={"username" : user.username})
+    session.commit()
+    return {"data" : this_user}
 
 
 @app.delete("/users", status_code=204)
 async def delete_user_at_id(
     session: SessionDep, user_id: int, current_user: User = Depends(get_current_user)
 ):
+    
+    if current_user.user_id != 1:
+        raise HTTPException(status_code=401)    
 
     this_user = session.exec(select(User).where(User.user_id == user_id)).first()
 
@@ -369,7 +405,7 @@ def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     exp = datetime.now(timezone.utc) + timedelta(minutes=TOKEN_EXPIRATION_TIME)
     to_encode.update({"exp": exp})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, "ALGORITHM")
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, ALGORITHM)
     return encoded_jwt
 
 
