@@ -362,7 +362,7 @@ async def update_username(
     if this_user != current_user:
         raise HTTPException(status_code=409, detail="Invalid credentials")
     
-    this_user = User.model_validate(this_user,  update={"username" : user.username})
+    this_user.username = user.username
     session.commit()
     return {"data" : this_user}
 
