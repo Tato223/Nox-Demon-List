@@ -15,9 +15,9 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True)
     hashed_password: str
     is_active : bool = Field(default=False)
-    # user_priority : int = Field(default=0, ge=0, le=100)
+    user_priority : int = Field(default=0, ge=0, le=100)
     
     # Priority 0 = All users -> Submit records, read levels
     # Priority 30 = List Helpers -> Accept records
-    # Priority 50 = List Moderators -> Edit Level details & position
+    # Priority 50 = List Moderators -> Modify list, edit Level details & position
     # Priority 100 = Owner (Me) -> Access all endpoints

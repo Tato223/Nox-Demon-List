@@ -154,7 +154,7 @@ async def read_level_at_pos(session: SessionDep, pos: int):
 @app.post("/levels", response_model=ResponseModel[Level], status_code=201)
 async def create_level(level: LevelCreate, session: SessionDep, current_user: User = Depends(get_current_user)):
 
-    if current_user.user_id != 1:
+    if current_user.user_priority < 50:
         raise HTTPException(status_code=401)
 
     try:
@@ -239,6 +239,10 @@ async def update_level_pos(
 async def delete_level_at_id(
     session: SessionDep, level_id: int, current_user: User = Depends(get_current_user)
 ):
+    
+    if current_user.user_priority < 50:
+        raise HTTPException(status_code=401)
+    
     this_level = get_level_by_id(session, level_id)
 
     if not this_level:
@@ -267,6 +271,9 @@ async def delete_level_at_id(
 async def delete_all_levels(
     session: SessionDep, current_user: User = Depends(get_current_user)
 ):
+    
+    if current_user.user_priority < 100:
+        raise HTTPException(status_code=401)
     
     if current_user.user_id != 1:
         raise HTTPException(status_code=401)
@@ -371,6 +378,9 @@ async def update_username(
 async def delete_user_at_id(
     session: SessionDep, user_id: int, current_user: User = Depends(get_current_user)
 ):
+    
+    if current_user.user_priority < 100:
+        raise HTTPException(status_code=401)
     
     if current_user.user_id != 1:
         raise HTTPException(status_code=401)    
